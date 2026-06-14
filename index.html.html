@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTL Potion Master v4.3 - Offline Computer Version</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght=400;700&display=swap');
+        
+        body {
+            margin: 0; padding: 0;
+            background: linear-gradient(180deg, #ffeef2 0%, #d6efff 100%);
+            font-family: 'Prompt', sans-serif;
+            overflow: hidden; color: #333; user-select: none;
+        }
+        
+        #menu-screen {
+            position: absolute; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #fffcf4 0%, #f7e9fa 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        h1 { font-size: 38px; color: #4a148c; text-shadow: 2px 2px 0px #fff; margin: 0 0 10px 0; text-align:center; }
+        .subtitle { font-size: 19px; color: #5c6bc0; margin-bottom: 25px; text-align:center; font-weight: bold; }
+        
+        .menu-grid {
+            display: grid; grid-template-columns: repeat(3, 125px); gap: 20px; justify-content: center;
+            max-height: 65vh; overflow-y: auto; padding: 15px;
+        }
+        @media(min-width: 600px) { .menu-grid { grid-template-columns: repeat(5, 165px); gap: 25px; } }
+        
+        .menu-card {
+            background: white; border: 4px solid #ff4081; border-radius: 25px;
+            padding: 15px; text-align: center; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 8px 0 #c60055;
+        }
+        .menu-card:hover { transform: translateY(-5px); box-shadow: 0 12px 0 #c60055; background: #fffbfd; }
+        .menu-icon { font-size: 50px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; height: 60px; }
+        .menu-icon img { width: 55px; height: 55px; object-fit: contain; }
+        .menu-name { font-size: 16px; font-weight: bold; color: #4a148c; }
+        
+        #ui-container {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            text-align: center; background: rgba(255, 255, 255, 0.96);
+            padding: 12px 25px; border-radius: 25px; border: 4px solid #ff9800;
+            box-shadow: 0 6px 0 #f57c00; width: 85%; max-width: 800px; pointer-events: none;
+        }
+        .recipe-title { font-size: 24px; color: #e65100; margin: 0 0 8px 0; font-weight: bold; }
+        .recipe-details { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; font-weight: bold; font-size: 17px; }
+        .recipe-item { 
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 15px; background: #fffde7; border: 2px solid #fff59d; color: #424242; 
+        }
+        
+        .mini-svg { width: 22px; height: 22px; vertical-align: middle; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.2)); }
+        
+        #gameCanvas { display: block; }
+        
+        #back-btn {
+            position: absolute; top: 15px; left: 15px; background: #ff5722; color: white;
+            border: none; padding: 12px 22px; font-size: 16px; border-radius: 20px; cursor: pointer; z-index: 5; 
+            font-weight: bold; box-shadow: 0 5px 0 #e64a19;
+        }
+        #back-btn:hover { transform: translateY(-2px); }
+
+        .popup-overlay {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 30px; text-align: center; border-radius: 40px;
+            color: #333; z-index: 20; width: 85%; max-width: 480px;
+        }
+        
+        #win-overlay { border: 6px solid #ffd54f; box-shadow: 0 0 50px rgba(0,0,0,0.15), 0 15px 0 #ffb300; }
+        .win-title { color: #ff8f00; font-size: 34px; font-weight: bold; margin-bottom: 5px; }
+        .win-icon { font-size: 110px; margin: 15px 0; display: flex; justify-content: center; align-items: center; min-height: 120px; }
+        .win-icon img { width: 120px; height: 120px; object-fit: contain; animation: bounce 0.8s infinite alternate; }
+        .win-icon span { animation: bounce 0.8s infinite alternate; }
+        .win-text { font-size: 22px; font-weight: bold; color: #311b92; margin-bottom: 25px; }
+        .next-btn { 
+            background: #4caf50; color: white; border: none; padding: 15px 40px; 
+            font-size: 20px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 6px 0 #2e7d32;
+        }
+        .next-btn:hover { background: #45a049; transform: scale(1.05); }
+
+        #fail-overlay { border: 6px solid #ff5252; box-shadow: 0 0 50px rgba(0,0,0,0.2), 0 15px 0 #c62828; }
+        .fail-title { color: #d32f2f; font-size: 34px; font-weight: bold; margin-bottom: 5px; }
+        .fail-container { position: relative; width: 140px; height: 140px; margin: 10px auto; display: flex; justify-content: center; align-items: center; }
+        .fail-icon { font-size: 100px; display: flex; justify-content: center; align-items: center; }
+        .fail-icon img { width: 120px; height: 120px; object-fit: contain; }
+        .fail-mark { position: absolute; top: -10px; right: -10px; font-size: 65px; z-index: 22; animation: shake 0.5s infinite; }
+        .fail-text { font-size: 21px; font-weight: bold; color: #b71c1c; margin-bottom: 25px; }
+        .retry-btn {
+            background: #ff9800; color: white; border: none; padding: 15px 35px;
+            font-size: 20px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 6px 0 #e65100;
+        }
+        .retry-btn:hover { background: #fb8c00; transform: scale(1.05); }
+
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+        @keyframes shake { 0% { transform: scale(1); } 50% { transform: scale(1.1) rotate(5deg); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <audio id="sfx-click" src="click.mp3" preload="auto"></audio>
+    <audio id="sfx-correct" src="correct.mp3" preload="auto"></audio>
+    <audio id="sfx-wrong" src="wrong.mp3" preload="auto"></audio>
+    <audio id="sfx-win" src="win.mp3" preload="auto"></audio>
+
+    <div id="menu-screen">
+        <h1>🧙‍♀️ หม้อปรุงยาวิเศษของครูออมสิน 🧪</h1>
+        <div class="subtitle">✨ มีโอกาสแค่ครั้งเดียว! ตั้งสติให้ดีแล้วรีบลากวัตถุดิบเรขาคณิตลงหม้อกันเลยนะจ๊ะ ✨</div>
+        <div class="menu-grid" id="menu-grid"></div>
+    </div>
+
+    <button id="back-btn" onclick="goToMenu()">⬅ กลับหน้าเลือกสูตร</button>
+
+    <div id="ui-container">
+        <div class="recipe-title" id="target-title">สูตรลับปรุง: </div>
+        <div class="recipe-details" id="recipe-status"></div>
+    </div>
+
+    <div id="win-overlay" class="popup-overlay">
+        <div class="win-title">✨ ปรุงสำเร็จแล้ว! ✨</div>
+        <div class="win-icon" id="win-item-icon">🔮</div>
+        <div class="win-text" id="win-item-name">ได้รับของวิเศษ</div>
+        <button class="next-btn" onclick="goToMenu()">ปรุงชิ้นต่อไป 🌟</button>
+    </div>
+
+    <div id="fail-overlay" class="popup-overlay">
+        <div class="fail-title">💥 อ๊ะ! ปรุงยาพลาดซะแล้ว 💥</div>
+        <div class="fail-container">
+            <div class="fail-icon" id="fail-item-icon">🥄</div>
+            <div class="fail-mark">❌</div>
+        </div>
+        <div class="fail-text" id="fail-item-name">ช้อนหักพังยับเยิน!</div>
+        <button class="retry-btn" id="retry-trigger-btn">ลองปรุงใหม่อีกครั้ง 🧪</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const sfx = {
+            click: document.getElementById('sfx-click'),
+            correct: document.getElementById('sfx-correct'),
+            wrong: document.getElementById('sfx-wrong'),
+            win: document.getElementById('sfx-win')
+        };
+
+        function playSound(sound) {
+            sound.currentTime = 0; 
+            sound.play().catch(e => console.log("Audio play failed:", e));
+        }
+
+        const shapeNames = { circle: "วงกลม", triangle: "สามเหลี่ยม", square: "สี่เหลี่ยม", star: "ดาว", heart: "หัวใจ", flower: "ดอกไม้", diamond: "ข้าวหลามตัด", oval: "วงรี" };
+        const shapeColors = { circle: "สีแดง", triangle: "สีฟ้า", square: "สีน้ำเงิน", star: "สีเขียว", heart: "สีชมพู", flower: "สีส้ม", diamond: "สีม่วง", oval: "สีเหลือง" };
+        const colorHex = { circle: '#ff3333', triangle: '#00e5ff', square: '#2979ff', star: '#00e676', heart: '#ff4081', flower: '#ff9100', diamond: '#d500f9', oval: '#ffee58' };
+
+        function getShapeSVG(shape, color) {
+            const svgOpen = `<svg class="mini-svg" viewBox="0 0 24 24">`;
+            const svgClose = `</svg>`;
+            let path = '';
+            if (shape === 'circle') path = `<circle cx="12" cy="12" r="9" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'triangle') path = `<polygon points="12,2 2,21 22,21" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'square') path = `<rect x="3" y="3" width="18" height="18" rx="3" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'star') path = `<polygon points="12,2 15,9 23,9 17,14 19,21 12,17 5,21 7,14 1,9 9,9" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'heart') path = `<path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.41,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.59,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'diamond') path = `<polygon points="12,2 22,12 12,22 2,12" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'oval') path = `<ellipse cx="12" cy="12" rx="10" ry="6" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+            else if (shape === 'flower') path = `<path d="M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M12,2A4,4 0 0,1 16,6A4,4 0 0,1 12,10A4,4 0 0,1 8,6A4,4 0 0,1 12,2M12,14A4,4 0 0,1 16,18A4,4 0 0,1 12,22A4,4 0 0,1 8,18A4,4 0 0,1 12,14M20,12A4,4 0 0,1 16,16A4,4 0 0,1 12,12A4,4 0 0,1 16,8A4,4 0 0,1 20,12M4,12A4,4 0 0,1 8,16A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 4,12Z" fill="${color}" stroke="#fff" stroke-width="1.5"/>`;
+            return svgOpen + path + svgClose;
+        }
+
+        const recipes = {
+            broom: { name: "ไม้กวาดเวทมนตร์บินได้", icon: "🧹", img: "", brokenImg: "", brokenText: "ไม้กวาดหักเป็นสองท่อน! บินไม่ได้แล้ว 💥", req: { triangle: 3, star: 2 } },
+            spoon: { name: "ช้อนยักษ์ตักความสุข", icon: "🥄", img: "", brokenImg: "", brokenText: "ช้อนยักษ์หักคดงอบิดเบี้ยว! ตักไม่ได้แล้ว 💥", req: { square: 2, circle: 3 } },
+            water: { name: "น้ำดื่มโอสถแก้กระหาย", icon: "💧", img: "", brokenImg: "", brokenText: "กลายเป็นน้ำเน่าเสียส่งกลิ่นเหม็น! 🤢", req: { circle: 3, heart: 2 } },
+            apple: { name: "แอปเปิ้ลเพิ่มพลังวิเศษ", icon: "🍎", img: "", brokenImg: "", brokenText: "แอปเปิ้ลเน่าเสียมีหนอนเจาะพังยับ! 🐛", req: { heart: 2, flower: 2 } },
+            medicine: { name: "ยารักษาแผลวิเศษ", icon: "💊", img: "", brokenImg: "", brokenText: "ตัวยาระเบิดกลายเป็นยาพิษร้ายแรง! 💀", req: { diamond: 2, oval: 3 } },
+            umbrella: { name: "ร่มกันฝนกรดเวทมนตร์", icon: "☂️", img: "", brokenImg: "", brokenText: "ก้านร่มหักและผ้าใบขาดพังยับเยิน! 💨", req: { triangle: 2, flower: 3 } },
+            house: { name: "บ้านป๊อปอัพกันภัยหลังใหญ่", icon: "🏠", img: "", brokenImg: "", brokenText: "โครงสร้างบ้านพังถล่มทลายราบคาบ! 🏚️", req: { square: 3, triangle: 2 } },
+            toilet: { name: "ชักโครกทะลุมิติสุดฮา", icon: "🚽", img: "", brokenImg: "", brokenText: "ชักโครกเซรามิกแตกกระจายใช้งานไม่ได้! 💥", req: { oval: 2, square: 2 } },
+            bonfire: { name: "กองไฟอบอุ่นไล่ความมืด", icon: "🔥", img: "", brokenImg: "", brokenText: "ไฟดับมอดสนิทเหลือแต่กองขี้เถ้าดำ! 💨", req: { diamond: 3, star: 2 } },
+            fishing_rod: { name: "เบ็ดตกปลาทองคำนำทาง", icon: "🎣", img: "", brokenImg: "", brokenText: "คันเบ็ดหักครึ่งและสายเอ็นขาดหลุดลุ่ย! 💥", req: { circle: 2, star: 3 } }
+        };
+
+        let currentRecipeKey = null;
+        let currentRecipe = null;
+        let gameState = 'menu'; 
+        let items = [];
+        let particles = [];
+        let draggedItem = null;
+        let counts = {};
+        let brewTimer = 0;
+
+        const pot = { x: 0, y: 0, r: 125 };
+
+        function initPotPosition() {
+            pot.x = canvas.width / 2;
+            if (canvas.width < 650) { pot.r = 90; } else { pot.r = 125; }
+            pot.y = canvas.height - 170;
+        }
+        initPotPosition();
+
+        function getMediaHTML(recipe, type = 'normal') {
+            let targetSrc = (type === 'broken') ? recipe.brokenImg : recipe.img;
+            if (targetSrc && targetSrc.startsWith('http')) {
+                return `<img src="${targetSrc}" alt="icon">`;
+            }
+            return `<span>${recipe.icon}</span>`;
+        }
+
+        const menuGrid = document.getElementById('menu-grid');
+        for (let key in recipes) {
+            let item = recipes[key];
+            let card = document.createElement('div');
+            card.className = 'menu-card';
+            card.innerHTML = `<div class="menu-icon">${getMediaHTML(item, 'normal')}</div><div class="menu-name">${item.name}</div>`;
+            card.onclick = () => startCooking(key);
+            menuGrid.appendChild(card);
+        }
+
+        function startCooking(key) {
+            playSound(sfx.click); 
+            currentRecipeKey = key;
+            currentRecipe = recipes[key];
+            for (let k in shapeNames) counts[k] = 0;
+            items = []; particles = [];
+            gameState = 'playing';
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('ui-container').style.display = 'block';
+            document.getElementById('back-btn').style.display = 'block';
+            document.getElementById('win-overlay').style.display = 'none';
+            document.getElementById('fail-overlay').style.display = 'none';
+            document.getElementById('target-title').innerText = `🎯 ภารกิจปรุง: ${currentRecipe.name}`;
+            updateUI();
+        }
+
+        function goToMenu() {
+            playSound(sfx.click); 
+            gameState = 'menu';
+            document.getElementById('menu-screen').style.display = 'flex';
+            document.getElementById('ui-container').style.display = 'none';
+            document.getElementById('back-btn').style.display = 'none';
+            document.getElementById('win-overlay').style.display = 'none';
+            document.getElementById('fail-overlay').style.display = 'none';
+        }
+
+        document.getElementById('retry-trigger-btn').onclick = () => {
+            playSound(sfx.click); 
+            if(currentRecipeKey) startCooking(currentRecipeKey);
+        };
+
+        function updateUI() {
+            if (!currentRecipe) return;
+            let html = "";
+            for (let shape in currentRecipe.req) {
+                let code = colorHex[shape];
+                let visualIcon = getShapeSVG(shape, code);
+                html += `<div class="recipe-item">
+                    ${visualIcon} <span>${shapeNames[shape]} (${shapeColors[shape]}):</span> 
+                    <span style="color:#d32f2f; font-size:20px; font-weight:bold;"> ${counts[shape]}</span> / ${currentRecipe.req[shape]}
+                </div>`;
+            }
+            document.getElementById('recipe-status').innerHTML = html;
+        }
+
+        class Ingredient {
+            constructor() {
+                this.r = 35;
+                this.y = -this.r;
+                this.speed = Math.random() * 0.8 + 1.2; 
+                this.isDragged = false;
+                let found = false, attempts = 0, forbiddenZone = pot.r + 50, leftBoundMax = pot.x - forbiddenZone, rightBoundMin = pot.x + forbiddenZone;
+                while (!found && attempts < 100) {
+                    attempts++;
+                    let lane = Math.random() < 0.5 ? 'left' : 'right';
+                    let minX = (lane === 'left') ? (this.r + 15) : rightBoundMin;
+                    let maxX = (lane === 'left') ? leftBoundMax : (canvas.width - this.r - 15);
+                    if (maxX > minX) {
+                        let testX = Math.random() * (maxX - minX) + minX, overlap = false;
+                        for (let i = 0; i < items.length; i++) {
+                            if (items[i].y < 130 && Math.abs(items[i].x - testX) < this.r * 2.6) { overlap = true; break; }
+                        }
+                        if (!overlap) { this.x = testX; found = true; }
+                    }
+                }
+                if (!found) this.x = Math.random() < 0.5 ? (this.r + 15) : (canvas.width - this.r - 15);
+                let types = Object.keys(shapeNames);
+                this.type = types[Math.floor(Math.random() * types.length)];
+                this.color = colorHex[this.type];
+            }
+            update() { if (!this.isDragged) this.y += this.speed; }
+            draw() {
+                ctx.save(); ctx.shadowColor = "rgba(0, 0, 0, 0.15)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 4;
+                let grad = ctx.createRadialGradient(this.x - this.r * 0.3, this.y - this.r * 0.3, this.r * 0.1, this.x, this.y, this.r);
+                grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.2, this.color); grad.addColorStop(1, darkenColor(this.color, 40));
+                ctx.fillStyle = grad; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.beginPath();
+                if (this.type === 'circle') ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                else if (this.type === 'triangle') { ctx.moveTo(this.x, this.y - this.r); ctx.lineTo(this.x - this.r, this.y + this.r); ctx.lineTo(this.x + this.r, this.y + this.r); }
+                else if (this.type === 'square') ctx.roundRect ? ctx.beginPath() || ctx.roundRect(this.x - this.r, this.y - this.r, this.r * 2, this.r * 2, 10) : ctx.rect(this.x - this.r, this.y - this.r, this.r * 2, this.r * 2);
+                else if (this.type === 'star') drawStar(ctx, this.x, this.y, 5, this.r, this.r/2);
+                else if (this.type === 'heart') drawHeart(ctx, this.x, this.y, this.r);
+                else if (this.type === 'flower') drawFlower(ctx, this.x, this.y, this.r);
+                else if (this.type === 'diamond') { ctx.moveTo(this.x, this.y - this.r); ctx.lineTo(this.x + this.r * 0.9, this.y); ctx.lineTo(this.x, this.y + this.r); ctx.lineTo(this.x - this.r * 0.9, this.y); }
+                else if (this.type === 'oval') ctx.ellipse(this.x, this.y, this.r * 0.7, this.r, 0, 0, Math.PI * 2);
+                ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+            }
+        }
+
+        function darkenColor(hex, percent) {
+            let num = parseInt(hex.replace("#",""), 16), amt = Math.round(2.55 * percent), R = (num >> 16) - amt, G = (num >> 8 & 0x00FF) - amt, B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R<0?0:R>255?255:R)*0x10000 + (G<0?0:G>255?255:G)*0x100 + (B<0?0:B>255?255:B)).toString(16).slice(1);
+        }
+        function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3; let step = Math.PI / spikes; ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) { ctx.lineTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius); rot += step; ctx.lineTo(cx + Math.cos(rot) * innerRadius, cy + Math.sin(rot) * innerRadius); rot += step; }
+        }
+        function drawHeart(ctx, cx, cy, r) {
+            let x = cx; let y = cy - r * 0.4; ctx.moveTo(x, y + r * 0.3); ctx.bezierCurveTo(x, y - r * 0.3, x - r, y - r * 0.3, x - r, y + r * 0.3); ctx.bezierCurveTo(x - r, y + r * 0.9, x, y + r * 1.4, x, y + r * 1.6); ctx.bezierCurveTo(x, y + r * 1.4, x + r, y + r * 0.9, x + r, y + r * 0.3); ctx.bezierCurveTo(x + r, y - r * 0.3, x, y - r * 0.3, x, y + r * 0.3);
+        }
+        function drawFlower(ctx, cx, cy, r) {
+            ctx.arc(cx, cy, r * 0.25, 0, Math.PI * 2); for (let i = 0; i < 5; i++) { let angle = (i * Math.PI * 2) / 5; ctx.arc(cx + Math.cos(angle)*r*0.48, cy + Math.sin(angle)*r*0.48, r*0.35, 0, Math.PI*2); }
+        }
+
+        class VaporParticle {
+            constructor(x, y, colorType = 'normal') {
+                this.x = x + (Math.random() * 80 - 40); this.y = y - 10;
+                this.r = (colorType === 'fail') ? Math.random() * 40 + 25 : (colorType === 'win' ? Math.random() * 55 + 35 : Math.random() * 22 + 8);
+                this.vx = Math.random() * 4 - 2; this.vy = (colorType !== 'normal') ? -(Math.random() * 5 + 4) : -(Math.random() * 2 + 1); this.alpha = 1;
+                let tones = ['rgba(244,143,177,', 'rgba(224,176,255,', 'rgba(241,190,253,', 'rgba(255,128,171,']; 
+                if(colorType === 'fail') tones = ['rgba(40,40,40,', 'rgba(90,90,90,', 'rgba(180,50,50,', 'rgba(120,20,20,']; 
+                this.colorBase = tones[Math.floor(Math.random() * tones.length)];
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.015; }
+            draw() { ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = this.colorBase + this.alpha + ")"; ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
+        }
+
+        function drawBlackCauldron3D() {
+            let cy = pot.y;
+            ctx.fillStyle = '#18191b'; ctx.beginPath(); ctx.arc(pot.x - pot.r * 0.4, cy + pot.r - 10, 16, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(pot.x + pot.r * 0.4, cy + pot.r - 10, 16, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(pot.x, cy + pot.r - 5, 14, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#222327'; ctx.lineWidth = 14; ctx.beginPath(); ctx.arc(pot.x - pot.r + 8, cy - 5, 24, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke(); ctx.beginPath(); ctx.arc(pot.x + pot.r - 8, cy - 5, 24, Math.PI * 1.5, Math.PI * 0.5); ctx.stroke();
+            let bodyGrad = ctx.createRadialGradient(pot.x - pot.r * 0.3, cy - pot.r * 0.2, 15, pot.x, cy, pot.r); bodyGrad.addColorStop(0, '#4e515a'); bodyGrad.addColorStop(0.5, '#28292d'); bodyGrad.addColorStop(1, '#111214'); 
+            ctx.fillStyle = bodyGrad; ctx.beginPath(); ctx.arc(pot.x, cy, pot.r, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(224, 176, 255, 0.15)'; ctx.beginPath(); ctx.ellipse(pot.x - pot.r * 0.4, cy - pot.r * 0.2, 35, 22, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#34363c'; ctx.beginPath(); ctx.ellipse(pot.x, cy - pot.r + 20, pot.r * 0.88, 25, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#1d1e22'; ctx.beginPath(); ctx.ellipse(pot.x, cy - pot.r + 20, pot.r * 0.82, 20, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#aa00ff'; ctx.beginPath(); ctx.ellipse(pot.x, cy - pot.r + 22, pot.r * 0.76, 15, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ff4081'; ctx.beginPath(); ctx.ellipse(pot.x, cy - pot.r + 24, pot.r * 0.55, 9, 0, 0, Math.PI * 2); ctx.fill();
+        }
+
+        window.addEventListener('pointerdown', (e) => {
+            if (gameState !== 'playing') return;
+            for (let i = items.length - 1; i >= 0; i--) {
+                let dist = Math.hypot(e.clientX - items[i].x, e.clientY - items[i].y);
+                if (dist < items[i].r * 1.6) { draggedItem = items[i]; draggedItem.isDragged = true; break; }
+            }
+        });
+        window.addEventListener('pointermove', (e) => {
+            if (draggedItem) { draggedItem.x = e.clientX; draggedItem.y = e.clientY; }
+        });
+        window.addEventListener('pointerup', (e) => {
+            if (!draggedItem) return;
+            let distToPot = Math.hypot(draggedItem.x - pot.x, draggedItem.y - (pot.y - pot.r));
+            
+            if (distToPot < pot.r + 50) {
+                let type = draggedItem.type;
+                
+                if (currentRecipe.req[type] !== undefined && counts[type] < currentRecipe.req[type]) {
+                    counts[type]++;
+                    playSound(sfx.correct);
+                    for(let k=0; k<15; k++) particles.push(new VaporParticle(pot.x, pot.y - pot.r, 'normal'));
+                    updateUI(); 
+                    checkRecipeSuccess();
+                } else {
+                    playSound(sfx.wrong);
+                    gameState = 'failing'; brewTimer = 70; 
+                }
+                items = items.filter(item => item !== draggedItem);
+            }
+            if(draggedItem) draggedItem.isDragged = false; draggedItem = null;
+        });
+
+        function checkRecipeSuccess() {
+            let isSuccess = true;
+            for (let shape in currentRecipe.req) { if (counts[shape] < currentRecipe.req[shape]) isSuccess = false; }
+            if (isSuccess) { gameState = 'brewing'; brewTimer = 75; }
+        }
+
+        let frame = 0;
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (gameState !== 'menu') {
+                drawBlackCauldron3D(); 
+                for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); particles[i].draw(); if (particles[i].alpha <= 0) particles.splice(i, 1); }
+            }
+            if (gameState === 'playing') {
+                frame++; if (frame % 20 === 0) items.push(new Ingredient());
+                for (let i = items.length - 1; i >= 0; i--) { items[i].update(); items[i].draw(); if (items[i].y > canvas.height + 50) items.splice(i, 1); }
+                if (Math.random() < 0.25) particles.push(new VaporParticle(pot.x, pot.y - pot.r + 15, 'normal'));
+            } 
+            else if (gameState === 'brewing') {
+                particles.push(new VaporParticle(pot.x, pot.y - pot.r, 'win'));
+                brewTimer--;
+                if (brewTimer <= 0) {
+                    gameState = 'win';
+                    playSound(sfx.win); 
+                    document.getElementById('win-item-icon').innerHTML = getMediaHTML(currentRecipe, 'normal');
+                    document.getElementById('win-item-name').innerText = `ได้รับ "${currentRecipe.name}" เรียบร้อยแล้ว!`;
+                    document.getElementById('win-overlay').style.display = 'block';
+                }
+            }
+            else if (gameState === 'failing') {
+                particles.push(new VaporParticle(pot.x, pot.y - pot.r, 'fail'));
+                brewTimer--;
+                if (brewTimer <= 0) {
+                    gameState = 'failed';
+                    document.getElementById('fail-item-icon').innerHTML = getMediaHTML(currentRecipe, 'broken');
+                    document.getElementById('fail-item-name').innerText = currentRecipe.brokenText;
+                    document.getElementById('fail-overlay').style.display = 'block';
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initPotPosition(); });
+        animate();
+    </script>
+</body>
+</html>
